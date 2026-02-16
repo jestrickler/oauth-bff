@@ -60,8 +60,8 @@ server:
 # - nginx routes requests
 # - No CORS configuration required
 # - Cookies work perfectly (same-site)
-cors:
-  allowed-origins: http://localhost:3000
+# CORS disabled - BFF uses same-site (nginx proxy)
+# Frontend and backend requests appear as same-origin to browser
 
 logging:
   level:

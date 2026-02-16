@@ -1,6 +1,5 @@
 package com.example.server;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,20 +8,17 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
 
 /**
  * ==========================================
  * SPRING SECURITY CONFIGURATION
- * Backend-for-Frontend (BFF) Pattern
+ * Backend-for-Frontend (BFF) Same-Site Pattern
  * ==========================================
  * 
  * This configuration implements the BFF pattern for a Single Page Application (SPA).
- * The backend acts as a secure gateway between the frontend and OAuth provider (GitHub).
+ * Frontend and backend are behind a single reverse proxy (nginx), appearing as same-origin to browser.
+ * 
+ * ARCHITECTURE: Browser → nginx (port 3000) → Frontend (/) + Backend (/api/, /oauth2/)
  * 
  * KEY SECURITY CONCEPTS:
  * 
@@ -36,13 +32,13 @@ import java.util.Arrays;
  *    - Protects state-changing operations (POST, PUT, DELETE)
  *    - XSRF-TOKEN cookie sent to browser (HttpOnly=false so React can read it)
  *    - React must send token in X-XSRF-TOKEN header
- *    - GET requests don't need CSRF (read-only, CORS protects response)
+ *    - GET requests don't need CSRF (read-only, same-site prevents attacks)
  * 
- * 3. CORS (Cross-Origin Resource Sharing)
- *    - Development: Frontend (:5173) and backend (:8080) are different origins
- *    - CORS allows frontend to read API responses
- *    - allowCredentials=true allows cookies to be sent
- *    - Production: Deploy on same domain via reverse proxy (no CORS needed)
+ * 3. NO CORS NEEDED
+ *    - Frontend served from same origin via nginx reverse proxy
+ *    - All API requests appear same-origin to browser (no CORS headers needed)
+ *    - Cookies sent automatically with every request
+ *    - More secure than separate domains (no SameSite=None;Secure needed)
  * 
  * 4. SECURITY HEADERS
  *    - Content-Security-Policy: Prevents XSS attacks
@@ -62,8 +58,7 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${cors.allowed-origins}")
-    private String allowedOrigins;
+
 
     /**
      * Main security configuration using Spring Security's SecurityFilterChain.
@@ -91,11 +86,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             // ==========================================
-            // CORS Configuration
+            // CORS DISABLED - BFF Pattern
             // ==========================================
-            // Allows frontend on different origin to access this API
-            // In production, use reverse proxy for same-origin (more secure)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // Frontend and backend served from same origin via nginx proxy
+            // No CORS needed; all requests appear same-origin to browser
+            // .cors() disabled
             
             // ==========================================
             // URL Authorization Rules
@@ -219,69 +214,8 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * CORS Configuration Bean
-     * 
-     * UNDERSTANDING CORS:
-     * - Browser security: Prevents website A from reading responses from website B
-     * - Two websites are "different origins" if they differ in:
-     *   - Scheme (http vs https)
-     *   - Domain (example.com vs api.example.com)
-     *   - Port (localhost:8080 vs localhost:5173)
-     * 
-     * DEVELOPMENT vs PRODUCTION:
-     * 
-     * Development:
-     * - Frontend: http://localhost:5173 (Vite dev server)
-     * - Backend: http://localhost:8080 (Spring Boot)
-     * - Different origins → CORS required
-     * 
-     * Production (BFF Pattern - RECOMMENDED):
-     * - Using reverse proxy (nginx/Apache/cloud):
-     *   https://app.example.com/ → Frontend (static files)
-     *   https://app.example.com/api/ → Backend (proxied to :8080)
-     * - Same origin → No CORS needed (more secure)
-     * 
-     * Production (Separate Domains - Less Secure):
-     * - Frontend: https://app.example.com
-     * - Backend: https://api.example.com
-     * - Different origins → CORS required
-     * - Must use SameSite=None; Secure cookies (security risk)
-     * 
-     * @return CorsConfigurationSource CORS configuration
-     */
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Allowed origins (frontends that can access this API)
-        // Development: http://localhost:5173
-        // Production: https://app.example.com OR empty if same-origin
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
-        
-        // Allowed HTTP methods
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        
-        // Allowed headers
-        // "*" allows all headers (including X-XSRF-TOKEN)
-        // For stricter security, list specific headers:
-        // Arrays.asList("Content-Type", "Authorization", "X-XSRF-TOKEN")
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        
-        // Allow credentials (cookies, authorization headers)
-        // REQUIRED: For session cookies and CSRF tokens to be sent
-        // SECURITY NOTE: Cannot use allowedOrigins("*") when this is true
-        configuration.setAllowCredentials(true);
-        
-        // Expose headers to JavaScript
-        // By default, only simple response headers are exposed
-        // Add custom headers if frontend needs to read them
-        // configuration.setExposedHeaders(Arrays.asList("X-Custom-Header"));
-        
-        // Apply configuration to all paths
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        
-        return source;
-    }
+    // CORS DISABLED: BFF Pattern uses same-site (all requests appear same-origin)
+    // If you need to support separate domains in production, enable CORS by:
+    // 1. Uncommenting .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+    // 2. Creating corsConfigurationSource() Bean (see git history)
 }
