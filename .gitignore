@@ -1,0 +1,32 @@
+# Secrets and environment
+.env
+.env.local
+!.env.example
+
+# Docker
+.dockerignore
+
+# OS  
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs (will be generated)
+client/dist/
+client/node_modules/
+server/build/
+server/.gradle/
+server/out/
+
+# Temporary files
+*.tmp
+.temp/

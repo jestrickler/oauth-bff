@@ -1,0 +1,70 @@
+# ===========================================
+# DOCKER DEVELOPMENT ENVIRONMENT CONFIGURATION
+# ===========================================
+# This profile is used when running in Docker Compose
+# Matches production architecture (same-origin via nginx)
+# ===========================================
+
+spring:
+  application:
+    name: oauth-server
+
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+
+  # Session timeout - production-like
+  session:
+    timeout: 15m
+
+server:
+  port: 8080
+  
+  # Tell Spring to trust X-Forwarded-* headers from nginx
+  forward-headers-strategy: framework
+  
+  # Configure Tomcat to parse all X-Forwarded-* headers
+  tomcat:
+    remoteip:
+      remote-ip-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
+      host-header: X-Forwarded-Host
+      port-header: X-Forwarded-Port
+  
+  servlet:
+    session:
+      cookie:
+        # Same-site via nginx proxy (production-like)
+        same-site: lax
+        
+        # In production this would be true (HTTPS)
+        # In Docker with HTTP, keep false
+        secure: false
+        
+        http-only: true
+        path: /
+
+# ===========================================
+# NO CORS NEEDED - Same Origin via nginx
+# ===========================================
+# nginx serves both frontend and backend on localhost:3000
+# Frontend: http://localhost:3000/
+# Backend:  http://localhost:3000/api/*
+# 
+# This is EXACTLY how production works:
+# - Single domain (app.example.com)
+# - nginx routes requests
+# - No CORS configuration required
+# - Cookies work perfectly (same-site)
+cors:
+  allowed-origins: http://localhost:3000
+
+logging:
+  level:
+    root: INFO
+    com.example.server: DEBUG
+    org.springframework.security: DEBUG
