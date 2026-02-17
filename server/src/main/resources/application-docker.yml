@@ -1,8 +1,8 @@
 # ===========================================
-# DOCKER DEVELOPMENT ENVIRONMENT CONFIGURATION
+# DOCKER ENVIRONMENT CONFIGURATION
 # ===========================================
-# This profile is used when running in Docker Compose
-# Matches production architecture (same-origin via nginx)
+# Used for development via Docker Compose
+# Also suitable for cloud dev/test environments
 # ===========================================
 
 spring:
@@ -17,17 +17,16 @@ spring:
             client-id: ${GITHUB_CLIENT_ID}
             client-secret: ${GITHUB_CLIENT_SECRET}
 
-  # Session timeout - production-like
   session:
     timeout: 15m
 
 server:
   port: 8080
   
-  # Tell Spring to trust X-Forwarded-* headers from nginx
+  # Trust X-Forwarded-* headers from nginx
   forward-headers-strategy: framework
   
-  # Configure Tomcat to parse all X-Forwarded-* headers
+  # Configure Tomcat to parse X-Forwarded-* headers
   tomcat:
     remoteip:
       remote-ip-header: X-Forwarded-For
@@ -38,30 +37,13 @@ server:
   servlet:
     session:
       cookie:
-        # Same-site via nginx proxy (production-like)
         same-site: lax
-        
-        # In production this would be true (HTTPS)
-        # In Docker with HTTP, keep false
         secure: false
-        
         http-only: true
         path: /
 
-# ===========================================
-# NO CORS NEEDED - Same Origin via nginx
-# ===========================================
-# nginx serves both frontend and backend on localhost:3000
-# Frontend: http://localhost:3000/
-# Backend:  http://localhost:3000/api/*
-# 
-# This is EXACTLY how production works:
-# - Single domain (app.example.com)
-# - nginx routes requests
-# - No CORS configuration required
-# - Cookies work perfectly (same-site)
-# CORS disabled - BFF uses same-site (nginx proxy)
-# Frontend and backend requests appear as same-origin to browser
+# Same-site via nginx proxy (no CORS needed)
+# nginx serves both frontend and backend from same origin
 
 logging:
   level:

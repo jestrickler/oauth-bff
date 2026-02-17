@@ -15,8 +15,9 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
  * Backend-for-Frontend (BFF) Same-Site Pattern
  * ==========================================
  * 
- * This configuration implements the BFF pattern for a Single Page Application (SPA).
- * Frontend and backend are behind a single reverse proxy (nginx), appearing as same-origin to browser.
+ * Implements the BFF pattern for a Single Page Application (SPA).
+ * Frontend and backend are behind a single reverse proxy (nginx),
+ * appearing as same-origin to the browser.
  * 
  * ARCHITECTURE: Browser → nginx (port 3000) → Frontend (/) + Backend (/api/, /oauth2/)
  * 
@@ -25,29 +26,29 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
  * 1. SESSION-BASED AUTHENTICATION
  *    - User authenticates via OAuth2 (GitHub)
  *    - Session stored server-side with JSESSIONID cookie
- *    - Cookie is HttpOnly (prevents XSS from stealing session)
- *    - Cookie is SameSite=Lax (prevents CSRF attacks)
+ *    - HttpOnly flag prevents XSS from stealing the session
+ *    - SameSite=Lax prevents CSRF attacks
  * 
  * 2. CSRF PROTECTION
  *    - Protects state-changing operations (POST, PUT, DELETE)
- *    - XSRF-TOKEN cookie sent to browser (HttpOnly=false so React can read it)
- *    - React must send token in X-XSRF-TOKEN header
+ *    - XSRF-TOKEN cookie sent to browser (HttpOnly=false for SPA access)
+ *    - React sends token in X-XSRF-TOKEN header
  *    - GET requests don't need CSRF (read-only, same-site prevents attacks)
  * 
  * 3. NO CORS NEEDED
  *    - Frontend served from same origin via nginx reverse proxy
- *    - All API requests appear same-origin to browser (no CORS headers needed)
+ *    - All API requests appear same-origin to browser
  *    - Cookies sent automatically with every request
- *    - More secure than separate domains (no SameSite=None;Secure needed)
+ *    - More secure than separate domains
  * 
  * 4. SECURITY HEADERS
  *    - Content-Security-Policy: Prevents XSS attacks
- *    - HSTS: Forces HTTPS (production only)
+ *    - HSTS: Forces HTTPS
  *    - X-Frame-Options: Prevents clickjacking
  * 
  * HIPAA CONSIDERATIONS:
- * - Session timeout: 15 minutes (configurable)
- * - HTTPS required in production
+ * - Session timeout: 15 minutes (configured in application-prod.yml)
+ * - HTTPS required (configured in application-prod.yml)
  * - Audit logging should be added for PHI access
  * - Consider MFA for additional security
  * 
@@ -96,8 +97,10 @@ public class SecurityConfig {
             // URL Authorization Rules
             // ==========================================
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints - no authentication required
-                .requestMatchers("/", "/error", "/login/**", "/oauth2/**").permitAll()
+                // OAuth2 flow endpoints - must be public
+                // /login/oauth2/code/github: GitHub callback (before session exists)
+                // /oauth2/authorization/github: Start OAuth flow
+                .requestMatchers("/login/**", "/oauth2/**").permitAll()
                 
                 // All other endpoints require authentication
                 // This includes /api/user, /api/logout, etc.
@@ -215,7 +218,7 @@ public class SecurityConfig {
     }
 
     // CORS DISABLED: BFF Pattern uses same-site (all requests appear same-origin)
-    // If you need to support separate domains in production, enable CORS by:
+    // If you need separate domains, enable CORS by:
     // 1. Uncommenting .cors(cors -> cors.configurationSource(corsConfigurationSource()))
     // 2. Creating corsConfigurationSource() Bean (see git history)
 }

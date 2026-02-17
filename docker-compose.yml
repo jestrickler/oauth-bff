@@ -1,32 +1,17 @@
 # ===========================================
-# DOCKER COMPOSE - PRODUCTION-LIKE DEVELOPMENT
+# DOCKER COMPOSE
 # ===========================================
-#
-# This setup mimics production architecture:
-# - nginx reverse proxy on port 3000
-# - Frontend and backend on SAME ORIGIN (same-site)
-# - All traffic through nginx (no CORS needed)
-# - Session cookies work perfectly (same-site)
-#
-# WHY THIS MATCHES PRODUCTION:
-# 1. Same-origin: http://localhost:3000 for everything
-# 2. nginx proxiesrequests (like production AWS ALB/nginx)
-# 3. No CORS configuration needed
-# 4. Cookies set by backend are valid for frontend
-#
-# PRODUCTION DIFFERENCE:
-# - Production uses HTTPS (this uses HTTP for local dev)
-# - Production domain (app.example.com vs localhost:3000)
-# - Production has proper SSL certificates
-#
+# Orchestrates frontend build, backend (Spring Boot), and nginx.
+# 
+# Architecture:
+# - nginx reverse proxy on configured PORT (default 3000)
+# - Frontend and backend on SAME ORIGIN (same-site BFF)
+# - All traffic through nginx (no CORS)
+# - Session cookies work correctly (same-site)
 # ===========================================
-
-version: '3.8'
 
 services:
-  # ===========================================
-  # FRONTEND BUILD - Build React app first
-  # ===========================================
+  # Frontend build stage - Build React app first
   frontend-build:
     build:
       context: ./client
@@ -64,9 +49,7 @@ services:
       - bff-network
     restart: unless-stopped
 
-  # ===========================================
-  # BACKEND - Spring Boot
-  # ===========================================
+  # Backend - Spring Boot OAuth2 server
   backend:
     build:
       context: ./server
@@ -84,7 +67,7 @@ services:
       # This allows Spring to reconstruct correct OAuth redirect URIs
       - PORT=${PORT:-3000}
     ports:
-      - "8080:8080"  # Exposed for debugging only
+      - "8080:8080"
     networks:
       - bff-network
     restart: unless-stopped
@@ -95,17 +78,14 @@ services:
       retries: 3
       start_period: 40s
 
-  # ===========================================
-  # FRONTEND DEV SERVER (Optional)
-  # ===========================================
-  # Uncomment for hot-reload development
-  # Keep commented for production-like build
+  # Optional: Frontend dev server with hot-reload
+  # Uncomment to use Vite dev server instead of built app
+  # Note: requires .env with NODE_ENV=development
   #
-  # frontend:
+  # frontend-dev:
   #   build:
   #     context: ./client
   #     dockerfile: Dockerfile.dev
-  #   container_name: bff-frontend
   #   volumes:
   #     - ./client:/app
   #     - /app/node_modules

@@ -9,6 +9,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Returns authenticated user profile.
+ * 
+ * CURRENT: OAuth2User (GitHub - does not support OIDC)
+ * FOR OpenID CONNECT (Keycloak, Google, etc.): Replace OAuth2User with OidcUser
+ * 
+ * @GetMapping("/user")
+ * public Map<String, Object> getUser(@AuthenticationPrincipal OidcUser principal) {
+ *   if (principal == null) {
+ *     return Collections.singletonMap("error", "Not authenticated");
+ *   }
+ *   return principal.getClaims(); // standardized OIDC claims
+ * }
+ */
 @RestController
 @RequestMapping("/api")
 public class UserController {
@@ -18,7 +32,6 @@ public class UserController {
         if (principal == null) {
             return Collections.singletonMap("error", "Not authenticated");
         }
-        // Return exactly what React needs to display the profile
         return principal.getAttributes();
     }
 }

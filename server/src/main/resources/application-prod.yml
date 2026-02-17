@@ -1,9 +1,7 @@
 # ==========================================
-# PRODUCTION ENVIRONMENT CONFIGURATION
+# CLOUD PRODUCTION ENVIRONMENT CONFIGURATION
 # ==========================================
-# This profile is used for production deployment
-# Run with: java -jar app.jar --spring.profiles.active=prod
-# ==========================================
+# Set: SPRING_PROFILES_ACTIVE=prod
 
 spring:
   application:
@@ -17,83 +15,33 @@ spring:
             client-id: ${GITHUB_CLIENT_ID}
             client-secret: ${GITHUB_CLIENT_SECRET}
             scope: read:user,user:email
-            # Minimal scopes for least privilege
 
-  # HIPAA Requirement: Short session timeout
-  # Users must re-authenticate after 15 minutes of inactivity
   session:
     timeout: 15m
 
 server:
   port: 8080
   
-  # ==========================================
-  # HTTPS Configuration (REQUIRED for Production)
-  # ==========================================
-  # Option 1: Use reverse proxy (nginx/Apache) - RECOMMENDED
-  #   - Proxy handles SSL termination
-  #   - Backend stays on HTTP internally
-  #   - Set server.forward-headers-strategy: framework
-  #
-  # Option 2: Spring Boot native HTTPS (shown below)
-  #   - Requires SSL certificate
-  #   - Use Let's Encrypt or commercial CA
-  # ==========================================
+  # Trust X-Forwarded-* headers from load balancer
+  forward-headers-strategy: framework
   
-  # Uncomment for Spring Boot native HTTPS:
-  # ssl:
-  #   enabled: true
-  #   key-store: classpath:keystore.p12
-  #   key-store-password: ${SSL_KEYSTORE_PASSWORD}
-  #   key-store-type: PKCS12
-  #   key-alias: oauth-server
+  tomcat:
+    remoteip:
+      remote-ip-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
+      host-header: X-Forwarded-Host
+      port-header: X-Forwarded-Port
   
   servlet:
     session:
       cookie:
-        # SameSite=Lax for OAuth compatibility
-        # For APIs without OAuth redirects, use 'strict'
         same-site: lax
-        
-        # REQUIRED: Secure cookies in production (HTTPS only)
         secure: true
-        
-        # REQUIRED: Prevent XSS from reading session cookies
         http-only: true
-        
         path: /
-        
-        # Set domain for cookie sharing across subdomains
-        # Example: '.example.com' shares between app.example.com and api.example.com
-        # For BFF on same domain, leave unset
-        # domain: .example.com
 
-# ==========================================
-# CORS Configuration for Production
-# ==========================================
-# OPTION A: BFF Pattern (Same Domain) - RECOMMENDED
-#   - Frontend and backend on same domain via reverse proxy
-#   - No CORS needed (same-origin)
-#   - Example: https://app.example.com serves both
-#   - Set allowed-origins to empty or same domain
-#
-# OPTION B: Separate Domains - Less Secure
-#   - Frontend: https://app.example.com
-#   - Backend: https://api.example.com
-#   - Requires CORS configuration
-#   - Requires SameSite=None (security risk)
-# ==========================================
-cors:
-  # For BFF (same domain), use same origin or leave empty
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://app.example.com}
-  # For separate domains: https://app.example.com,https://mobile.example.com
-
-# Production logging - minimal for performance, sufficient for auditing
 logging:
   level:
     root: WARN
     com.example.server: INFO
     org.springframework.security: INFO
-  # HIPAA: Configure audit logging to track all PHI access
-  # Use logging framework like Logback with file appenders
-  # Include: user, timestamp, action, resource, IP address

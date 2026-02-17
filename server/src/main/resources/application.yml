@@ -1,17 +1,19 @@
 # ==========================================
 # BASE APPLICATION CONFIGURATION
 # ==========================================
-# This file contains common configuration for all environments
-# Environment-specific settings are in application-{profile}.yml
+# Common configuration for all environments
+# Environment-specific overrides are in application-{profile}.yml
 # 
-# Active profiles:
-# - dev: Local development (default)
-# - prod: Production deployment
+# PROFILES:
+# - docker: Development (local) or cloud dev/test
+# - prod: Cloud production
+# 
+# REQUIRED: Set SPRING_PROFILES_ACTIVE environment variable
 # ==========================================
 
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+    active: ${SPRING_PROFILES_ACTIVE}  # Must be explicitly set (docker or prod)
   
   application:
     name: oauth-server
@@ -23,6 +25,19 @@ spring:
           github:
             client-id: ${GITHUB_CLIENT_ID}
             client-secret: ${GITHUB_CLIENT_SECRET}
+          # KEYCLOAK (OIDC): Uncomment to use Keycloak instead of/alongside GitHub
+          # keycloak:
+          #   client-id: ${KEYCLOAK_CLIENT_ID}
+          #   client-secret: ${KEYCLOAK_CLIENT_SECRET}
+          #   client-authentication-method: client_secret_basic
+          #   authorization-grant-type: authorization_code
+          #   redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
+          #   scope: openid,profile,email
+          #   provider: keycloak
+          # provider:
+          #   keycloak:
+          #     issuer-uri: ${KEYCLOAK_ISSUER_URI}
+          #     # issuer-uri: https://keycloak.example.com/realms/myapp
 
   # Default session timeout (overridden in profiles)
   session:
@@ -35,15 +50,11 @@ server:
     session:
       cookie:
         same-site: lax
-        secure: false  # Overridden in prod profile
+        secure: false  # Overridden in prod
         http-only: true
         path: /
-
-# Default CORS - overridden in environment profiles
-cors:
-  allowed-origins: http://localhost:5173
 
 logging:
   level:
     root: INFO
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
