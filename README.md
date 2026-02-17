@@ -58,14 +58,8 @@ GITHUB_CLIENT_SECRET=your_client_secret_here
 ### 3. Build and Run
 
 ```bash
-# Install frontend dependencies
-cd client
-npm install
-npm run build
-cd ..
-
-# Start with Docker Compose
-docker-compose up --build
+# Start with Docker Compose (builds frontend automatically)
+docker compose up --build
 ```
 
 ### 4. Access the App
@@ -99,11 +93,9 @@ oauth-bff/
 │   │       ├── SecurityConfig.java          # Security configuration
 │   │       ├── SpaCsrfTokenRequestHandler.java
 │   │       ├── CsrfCookieFilter.java
-│   │       ├── UserController.java          # API endpoints
-│   │       └── HomeController.java
+│   │       └── UserController.java          # API endpoints
 │   ├── src/main/resources/
 │   │   ├── application.yml           # Base config
-│   │   ├── application-dev.yml       # Local dev (no Docker)
 │   │   ├── application-docker.yml    # Docker dev
 │   │   └── application-prod.yml      # Production
 │   ├── build.gradle
@@ -122,14 +114,14 @@ oauth-bff/
 **Why same-site is critical for HIPAA:**
 
 ```
-Different Origins (NOT same-site):
+Wrong Approach (separate servers):
   Frontend:  http://localhost:5173
   Backend:   http://localhost:8080
   ❌ Requires CORS
   ❌ Cookies need SameSite=None (less secure)
   ❌ Different from production
 
-Same Origin (this demo):
+Correct Approach (this demo):
   Everything:  http://localhost:3000
   ✅ No CORS needed
   ✅ Cookies work perfectly (SameSite=Lax)
@@ -158,13 +150,12 @@ See [client/src/services/api.js](client/src/services/api.js) for implementation.
 
 Both are SameSite=Lax, meaning they're only sent to same origin.
 
-## 🔄 Development Modes
+## 🔄 Development
 
-### Mode 1: Docker (Same-Site, Production-Like) ← **RECOMMENDED FOR HIPAA**
+### Docker (Same-Site BFF Pattern)
 
 ```bash
-cd client && npm run build && cd ..
-docker-compose up --build
+docker compose up --build
 ```
 
 Access: `http://localhost:3000`
@@ -172,24 +163,7 @@ Access: `http://localhost:3000`
 - nginx serves frontend + proxies backend
 - Same origin for everything
 - Matches production exactly
-
-### Mode 2: Separate Servers (CORS required)
-
-**Backend:**
-```bash
-cd server
-./gradlew bootRun  # Runs on :8080
-```
-
-**Frontend:**
-```bash
-cd client
-npm run dev  # Runs on :5173
-```
-
-**GitHub OAuth Callback:** `http://localhost:8080/login/oauth2/code/github`
-
-⚠️ **Not same-site** - requires CORS configuration (less secure)
+- **HIPAA-compliant same-site architecture**
 
 ## 📊 Differences: Development vs Production
 
@@ -313,10 +287,12 @@ docker-compose up --build
 
 ## 📚 Documentation
 
-- [README.md](README.md) - This file
-- [server/README.md](server/README.md) - Backend details
-- [docs/SECURITY_CONCEPTS.md](server/docs/SECURITY_CONCEPTS.md) - Security deep dive
-- [docs/DEPLOYMENT_GUIDE.md](server/docs/DEPLOYMENT_GUIDE.md) - Production deployment
+- [QUICKSTART.md](QUICKSTART.md) - Get running in 2 minutes
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Complete request flow and port-agnostic setup
+- [server/docs/SECURITY_CONCEPTS.md](server/docs/SECURITY_CONCEPTS.md) - Security deep dive
+- [server/docs/DEPLOYMENT_GUIDE.md](server/docs/DEPLOYMENT_GUIDE.md) - Production deployment
+- [server/docs/DEV_VS_PROD.md](server/docs/DEV_VS_PROD.md) - Docker dev vs production comparison
+- [REFACTORING_GUIDE.md](REFACTORING_GUIDE.md) - Migrating existing apps to BFF pattern
 
 ## 🤝 Contributing
 

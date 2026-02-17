@@ -465,14 +465,17 @@ tail -f /var/log/nginx/oauth-bff-error.log
 
 ### Health Checks
 
-Add to Spring Boot (`HomeController.java`):
+Create `HealthController.java`:
 ```java
-@GetMapping("/health")
-public Map<String, String> health() {
-    return Map.of(
-        "status", "UP",
-        "timestamp", Instant.now().toString()
-    );
+@RestController
+public class HealthController {
+    @GetMapping("/health")
+    public Map<String, String> health() {
+        return Map.of(
+            "status", "UP",
+            "timestamp", Instant.now().toString()
+        );
+    }
 }
 ```
 
